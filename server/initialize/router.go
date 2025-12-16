@@ -34,12 +34,12 @@ func (fs justFilesFilesystem) Open(name string) (http.File, error) {
 // 初始化总路由
 
 func Routers() *gin.Engine {
-    Router := gin.New()
-    // 使用自定义的 Recovery 中间件，记录 panic 并入库
-    Router.Use(middleware.GinRecovery(true))
-    if gin.Mode() == gin.DebugMode {
-        Router.Use(gin.Logger())
-    }
+	Router := gin.New()
+	// 使用自定义的 Recovery 中间件，记录 panic 并入库
+	Router.Use(middleware.GinRecovery(true))
+	if gin.Mode() == gin.DebugMode {
+		Router.Use(gin.Logger())
+	}
 
 	if !global.GVA_CONFIG.MCP.Separate {
 
@@ -57,6 +57,7 @@ func Routers() *gin.Engine {
 
 	systemRouter := router.RouterGroupApp.System
 	exampleRouter := router.RouterGroupApp.Example
+	emagRouter := router.RouterGroupApp.Emag
 	// 如果想要不使用nginx代理前端网页，可以修改 web/.env.production 下的
 	// VUE_APP_BASE_API = /
 	// VUE_APP_BASE_PATH = http://localhost
@@ -113,6 +114,8 @@ func Routers() *gin.Engine {
 		exampleRouter.InitFileUploadAndDownloadRouter(PrivateGroup)         // 文件上传下载功能路由
 		exampleRouter.InitAttachmentCategoryRouterRouter(PrivateGroup)      // 文件上传下载分类
 
+		// Emag 模块路由
+		emagRouter.InitEmagCategoryRouter(PrivateGroup) // Emag品类管理路由
 	}
 
 	//插件路由安装

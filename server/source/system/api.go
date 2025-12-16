@@ -213,6 +213,14 @@ func (i *initApi) InitializeData(ctx context.Context) (context.Context, error) {
 		{ApiGroup: "版本控制", Method: "POST", Path: "/sysVersion/importVersion", Description: "同步版本"},
 		{ApiGroup: "版本控制", Method: "DELETE", Path: "/sysVersion/deleteSysVersion", Description: "删除版本"},
 		{ApiGroup: "版本控制", Method: "DELETE", Path: "/sysVersion/deleteSysVersionByIds", Description: "批量删除版本"},
+
+		// Emag 品类管理
+		{ApiGroup: "Emag品类管理", Method: "POST", Path: "/emagCategory/createEmagCategory", Description: "创建品类"},
+		{ApiGroup: "Emag品类管理", Method: "DELETE", Path: "/emagCategory/deleteEmagCategory", Description: "删除品类"},
+		{ApiGroup: "Emag品类管理", Method: "DELETE", Path: "/emagCategory/deleteEmagCategoryByIds", Description: "批量删除品类"},
+		{ApiGroup: "Emag品类管理", Method: "PUT", Path: "/emagCategory/updateEmagCategory", Description: "更新品类"},
+		{ApiGroup: "Emag品类管理", Method: "GET", Path: "/emagCategory/findEmagCategory", Description: "获取单个品类"},
+		{ApiGroup: "Emag品类管理", Method: "GET", Path: "/emagCategory/getEmagCategoryList", Description: "获取品类列表"},
 	}
 	if err := db.Create(&entities).Error; err != nil {
 		return ctx, errors.Wrap(err, sysModel.SysApi{}.TableName()+"表数据初始化失败!")
