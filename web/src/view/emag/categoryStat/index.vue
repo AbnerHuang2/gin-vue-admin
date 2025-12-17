@@ -2,12 +2,12 @@
   <div class="category-stat-container">
     <!-- Tab 切换 -->
     <el-tabs v-model="activeTab" type="border-card" class="stat-tabs">
-      <!-- Tab 1: 品类指标 Top20 -->
-      <el-tab-pane label="品类指标 Top20" name="top20">
+      <!-- Tab 1: 品类指标列表 -->
+      <el-tab-pane label="品类指标列表" name="list">
         <div class="gva-search-box">
-          <el-form :inline="true" :model="top20Search" class="demo-form-inline" @keyup.enter="onTop20Submit">
+          <el-form :inline="true" :model="listSearch" class="demo-form-inline" @keyup.enter="onListSubmit">
             <el-form-item label="快照日期">
-              <el-select v-model="top20Search.snapshotDate" placeholder="请选择快照日期" clearable style="width: 180px">
+              <el-select v-model="listSearch.snapshotDate" placeholder="请选择快照日期" clearable style="width: 180px">
                 <el-option
                   v-for="date in snapshotDateList"
                   :key="date"
@@ -18,7 +18,7 @@
             </el-form-item>
             <el-form-item label="超热销率 ≥">
               <el-input-number 
-                v-model="top20Search.supperHotRate" 
+                v-model="listSearch.supperHotRate" 
                 :min="0" 
                 :max="100" 
                 :precision="2"
@@ -29,7 +29,7 @@
             </el-form-item>
             <el-form-item label="OEM超热销率 ≥">
               <el-input-number 
-                v-model="top20Search.oemSupperHotRate" 
+                v-model="listSearch.oemSupperHotRate" 
                 :min="0" 
                 :max="100" 
                 :precision="2"
@@ -39,27 +39,27 @@
               />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" icon="search" @click="onTop20Submit">查询</el-button>
-              <el-button icon="refresh" @click="onTop20Reset">重置</el-button>
+              <el-button type="primary" icon="search" @click="onListSubmit">查询</el-button>
+              <el-button icon="refresh" @click="onListReset">重置</el-button>
             </el-form-item>
           </el-form>
         </div>
 
         <div class="gva-table-box">
           <!-- 图表区域 -->
-          <div class="chart-container" v-if="top20Data.length > 0">
-            <h4 class="chart-title">品类指标 Top20 对比图</h4>
-            <Chart :options="top20ChartOptions" height="400px" />
+          <div class="chart-container" v-if="listData.length > 0">
+            <h4 class="chart-title">品类指标对比图（当前页）</h4>
+            <Chart :options="listChartOptions" height="400px" />
           </div>
 
           <!-- 表格区域 -->
           <el-table
-            :data="top20Data"
+            :data="listData"
             style="width: 100%"
             tooltip-effect="dark"
             row-key="id"
           >
-            <el-table-column align="center" label="排名" type="index" width="70" />
+            <el-table-column align="center" label="序号" type="index" width="70" :index="listIndexMethod" />
             <el-table-column align="left" label="品类ID" prop="categoryId" width="150" />
             <el-table-column align="left" label="品类名称" prop="categoryName" min-width="150" show-overflow-tooltip />
             <el-table-column align="left" label="子品类名称" prop="subcategoryName" min-width="150" show-overflow-tooltip />
@@ -88,22 +88,24 @@
             </el-table-column>
             <el-table-column align="left" label="标签" prop="tags" min-width="100" />
           </el-table>
+          <div class="gva-pagination">
+            <el-pagination
+              :current-page="listPage"
+              :page-size="listPageSize"
+              :page-sizes="[10, 30, 50, 100]"
+              :total="listTotal"
+              layout="total, sizes, prev, pager, next, jumper"
+              @current-change="handleListCurrentChange"
+              @size-change="handleListSizeChange"
+            />
+          </div>
         </div>
       </el-tab-pane>
 
-      <!-- Tab 2: 同比增长排名 -->
-      <el-tab-pane label="同比增长排名" name="growth">
+      <!-- Tab 2: 热销增长率排名 -->
+      <el-tab-pane label="热销增长率排名" name="growth">
         <div class="gva-search-box">
-          <el-form :inline="true" :model="growthSearch" class="demo-form-inline">
-            <el-form-item label="显示数量">
-              <el-input-number 
-                v-model="growthSearch.limit" 
-                :min="10" 
-                :max="100" 
-                :step="10"
-                style="width: 140px"
-              />
-            </el-form-item>
+          <el-form :inline="true" class="demo-form-inline">
             <el-form-item>
               <el-button type="primary" icon="search" @click="onGrowthSubmit">查询</el-button>
             </el-form-item>
@@ -118,7 +120,7 @@
         <div class="gva-table-box">
           <!-- 图表区域 -->
           <div class="chart-container" v-if="growthData.length > 0">
-            <h4 class="chart-title">总数同比增长率排名（横向条形图）</h4>
+            <h4 class="chart-title">热销增长率排名（当前页前20条）</h4>
             <Chart :options="growthChartOptions" height="500px" />
           </div>
 
@@ -129,7 +131,7 @@
             tooltip-effect="dark"
             row-key="categoryId"
           >
-            <el-table-column align="center" label="排名" type="index" width="70" />
+            <el-table-column align="center" label="序号" type="index" width="70" :index="growthIndexMethod" />
             <el-table-column align="left" label="品类ID" prop="categoryId" width="150" />
             <el-table-column align="left" label="品类名称" prop="categoryName" min-width="150" show-overflow-tooltip />
             <el-table-column align="left" label="子品类名称" prop="subcategoryName" min-width="150" show-overflow-tooltip />
@@ -144,7 +146,7 @@
             </el-table-column>
             <el-table-column align="right" label="当前超热销" prop="currentSupperHotTotal" width="110" />
             <el-table-column align="right" label="上期超热销" prop="previousSupperHotTotal" width="110" />
-            <el-table-column align="right" label="超热销增长率(%)" width="140">
+            <el-table-column align="right" label="热销增长率(%)" width="140">
               <template #default="scope">
                 <span :class="getGrowthClass(scope.row.supperHotGrowthRate)">
                   {{ formatGrowthRate(scope.row.supperHotGrowthRate) }}
@@ -162,6 +164,17 @@
               </template>
             </el-table-column>
           </el-table>
+          <div class="gva-pagination">
+            <el-pagination
+              :current-page="growthPage"
+              :page-size="growthPageSize"
+              :page-sizes="[10, 30, 50, 100]"
+              :total="growthTotal"
+              layout="total, sizes, prev, pager, next, jumper"
+              @current-change="handleGrowthCurrentChange"
+              @size-change="handleGrowthSizeChange"
+            />
+          </div>
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -174,7 +187,7 @@ import { ElMessage } from 'element-plus'
 import Chart from '@/components/charts/index.vue'
 import {
   getSnapshotDateList,
-  getCategoryStatTop20,
+  getCategoryStatList,
   getCategoryStatGrowthRank
 } from '@/api/emagCategoryStat'
 
@@ -183,25 +196,30 @@ defineOptions({
 })
 
 // Tab 状态
-const activeTab = ref('top20')
+const activeTab = ref('list')
 
 // 快照日期列表
 const snapshotDateList = ref([])
 
-// Top20 搜索条件
-const top20Search = reactive({
+// 品类指标列表搜索条件
+const listSearch = reactive({
   snapshotDate: '',
   supperHotRate: 0,
   oemSupperHotRate: 0
 })
 
-// Top20 数据
-const top20Data = ref([])
+// 品类指标列表分页
+const listPage = ref(1)
+const listPageSize = ref(10)
+const listTotal = ref(0)
 
-// 同比增长搜索条件
-const growthSearch = reactive({
-  limit: 50
-})
+// 品类指标列表数据
+const listData = ref([])
+
+// 同比增长分页
+const growthPage = ref(1)
+const growthPageSize = ref(10)
+const growthTotal = ref(0)
 
 // 同比增长数据
 const growthData = ref([])
@@ -218,9 +236,9 @@ const fetchSnapshotDateList = async () => {
       snapshotDateList.value = res.data || []
       // 默认选中最新日期
       if (snapshotDateList.value.length > 0) {
-        top20Search.snapshotDate = snapshotDateList.value[0]
+        listSearch.snapshotDate = snapshotDateList.value[0]
         // 自动查询
-        fetchTop20Data()
+        fetchListData()
       }
     }
   } catch (error) {
@@ -228,50 +246,94 @@ const fetchSnapshotDateList = async () => {
   }
 }
 
-// 获取 Top20 数据
-const fetchTop20Data = async () => {
+// 获取品类指标列表数据
+const fetchListData = async () => {
   try {
-    const res = await getCategoryStatTop20(top20Search)
+    const res = await getCategoryStatList({
+      page: listPage.value,
+      pageSize: listPageSize.value,
+      ...listSearch
+    })
     if (res.code === 0) {
-      top20Data.value = res.data.list || []
+      listData.value = res.data.list || []
+      listTotal.value = res.data.total
     }
   } catch (error) {
-    ElMessage.error('获取品类指标Top20失败')
+    ElMessage.error('获取品类指标列表失败')
   }
 }
 
 // 获取同比增长数据
 const fetchGrowthData = async () => {
   try {
-    const res = await getCategoryStatGrowthRank(growthSearch)
+    const res = await getCategoryStatGrowthRank({
+      page: growthPage.value,
+      pageSize: growthPageSize.value
+    })
     if (res.code === 0) {
       growthData.value = res.data.list || []
+      growthTotal.value = res.data.total || 0
       growthDateInfo.currentDate = res.data.currentDate || ''
       growthDateInfo.previousDate = res.data.previousDate || ''
     }
   } catch (error) {
-    ElMessage.error('获取同比增长排名失败')
+    ElMessage.error('获取热销增长率排名失败')
   }
 }
 
-// Top20 查询
-const onTop20Submit = () => {
-  fetchTop20Data()
+// 品类指标列表查询
+const onListSubmit = () => {
+  listPage.value = 1
+  fetchListData()
 }
 
-// Top20 重置
-const onTop20Reset = () => {
-  top20Search.supperHotRate = 0
-  top20Search.oemSupperHotRate = 0
+// 品类指标列表重置
+const onListReset = () => {
+  listSearch.supperHotRate = 0
+  listSearch.oemSupperHotRate = 0
   if (snapshotDateList.value.length > 0) {
-    top20Search.snapshotDate = snapshotDateList.value[0]
+    listSearch.snapshotDate = snapshotDateList.value[0]
   }
-  fetchTop20Data()
+  listPage.value = 1
+  fetchListData()
+}
+
+// 品类指标列表分页
+const handleListSizeChange = (val) => {
+  listPageSize.value = val
+  fetchListData()
+}
+
+const handleListCurrentChange = (val) => {
+  listPage.value = val
+  fetchListData()
+}
+
+// 品类指标列表序号方法
+const listIndexMethod = (index) => {
+  return (listPage.value - 1) * listPageSize.value + index + 1
 }
 
 // 同比增长查询
 const onGrowthSubmit = () => {
+  growthPage.value = 1
   fetchGrowthData()
+}
+
+// 同比增长分页
+const handleGrowthSizeChange = (val) => {
+  growthPageSize.value = val
+  fetchGrowthData()
+}
+
+const handleGrowthCurrentChange = (val) => {
+  growthPage.value = val
+  fetchGrowthData()
+}
+
+// 同比增长序号方法
+const growthIndexMethod = (index) => {
+  return (growthPage.value - 1) * growthPageSize.value + index + 1
 }
 
 // 格式化比率
@@ -307,17 +369,17 @@ const getGrowthClass = (rate) => {
   return ''
 }
 
-// Top20 图表配置
-const top20ChartOptions = computed(() => {
-  if (!top20Data.value || top20Data.value.length === 0) {
+// 品类指标列表图表配置
+const listChartOptions = computed(() => {
+  if (!listData.value || listData.value.length === 0) {
     return {}
   }
-  const categories = top20Data.value.map(item => item.categoryId || '')
-  const supperHotRates = top20Data.value.map(item => {
+  const categories = listData.value.map(item => item.categoryId || '')
+  const supperHotRates = listData.value.map(item => {
     const rate = item.supperHotRate
     return rate != null ? (rate * 100).toFixed(2) : 0
   })
-  const oemSupperHotRates = top20Data.value.map(item => {
+  const oemSupperHotRates = listData.value.map(item => {
     const rate = item.oemSupperHotRate
     return rate != null ? (rate * 100).toFixed(2) : 0
   })
@@ -383,7 +445,7 @@ const growthChartOptions = computed(() => {
   const displayData = growthData.value.slice(0, 20)
   const categories = displayData.map(item => item.categoryId || '')
   const growthRates = displayData.map(item => {
-    const rate = item.totalGrowthRate
+    const rate = item.supperHotGrowthRate
     return rate != null ? Number(rate.toFixed(2)) : 0
   })
 
@@ -399,7 +461,7 @@ const growthChartOptions = computed(() => {
       },
       formatter: (params) => {
         const data = params[0]
-        return `${data.name}<br/>总数增长率: ${data.value}%`
+        return `${data.name}<br/>热销增长率: ${data.value}%`
       }
     },
     grid: {
@@ -425,7 +487,7 @@ const growthChartOptions = computed(() => {
     },
     series: [
       {
-        name: '总数增长率',
+        name: '热销增长率',
         type: 'bar',
         data: reversedGrowthRates,
         itemStyle: {
@@ -473,6 +535,12 @@ onMounted(() => {
   padding: 16px;
 }
 
+.gva-pagination {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .chart-container {
   margin-bottom: 24px;
   padding: 16px;
@@ -516,4 +584,3 @@ onMounted(() => {
   font-weight: 600;
 }
 </style>
-

@@ -19,11 +19,15 @@ func (e *EmagCategoryStatService) GetSnapshotDateList() (list []string, err erro
 	return list, err
 }
 
-// GetCategoryStatTop20 根据条件查询品类指标Top20（关联品类表获取品类名称）
-func (e *EmagCategoryStatService) GetCategoryStatTop20(info emagReq.CategoryStatTop20Search) (list []emag.EmagCategoryStatWithName, total int64, err error) {
-	limit := 20
-	if info.PageSize > 0 && info.PageSize < 20 {
-		limit = info.PageSize
+// GetCategoryStatList 根据条件分页查询品类指标（关联品类表获取品类名称）
+func (e *EmagCategoryStatService) GetCategoryStatList(info emagReq.CategoryStatSearch) (list []emag.EmagCategoryStatWithName, total int64, err error) {
+	limit := info.PageSize
+	offset := info.PageSize * (info.Page - 1)
+	if limit <= 0 {
+		limit = 10
+	}
+	if offset < 0 {
+		offset = 0
 	}
 
 	// 构建基础查询条件
@@ -66,20 +70,24 @@ func (e *EmagCategoryStatService) GetCategoryStatTop20(info emagReq.CategoryStat
 		LEFT JOIN emag_category c ON s.category_id = c.category_id
 		WHERE ` + whereClause + `
 		ORDER BY s.supper_hot_rate DESC, s.oem_supper_hot_rate DESC
-		LIMIT ?
+		LIMIT ? OFFSET ?
 	`
-	args = append(args, limit)
+	args = append(args, limit, offset)
 
 	err = global.GVA_DB.Raw(sql, args...).Scan(&list).Error
 
 	return list, total, err
 }
 
-// GetCategoryStatGrowthRank 获取品类指标同比增长排名（关联品类表获取品类名称）
-func (e *EmagCategoryStatService) GetCategoryStatGrowthRank(info emagReq.CategoryStatGrowthSearch) (list []emag.CategoryStatGrowth, currentDate string, previousDate string, err error) {
-	limit := 50
-	if info.Limit > 0 {
-		limit = info.Limit
+// GetCategoryStatGrowthRank 获取品类指标同比增长排名（关联品类表获取品类名称）- 分页查询
+func (e *EmagCategoryStatService) GetCategoryStatGrowthRank(info emagReq.CategoryStatGrowthSearch) (list []emag.CategoryStatGrowth, total int64, currentDate string, previousDate string, err error) {
+	limit := info.PageSize
+	offset := info.PageSize * (info.Page - 1)
+	if limit <= 0 {
+		limit = 10
+	}
+	if offset < 0 {
+		offset = 0
 	}
 
 	// 1. 获取最新的两个 snapshot_date
@@ -90,17 +98,28 @@ func (e *EmagCategoryStatService) GetCategoryStatGrowthRank(info emagReq.Categor
 		Limit(2).
 		Pluck("snapshot_date", &dates).Error
 	if err != nil {
-		return nil, "", "", err
+		return nil, 0, "", "", err
 	}
 
 	if len(dates) < 2 {
-		return nil, "", "", nil // 数据不足，无法计算同比
+		return nil, 0, "", "", nil // 数据不足，无法计算同比
 	}
 
 	currentDate = dates[0]
 	previousDate = dates[1]
 
-	// 2. 使用原生SQL进行JOIN查询计算增长率，同时关联 emag_category 表获取品类名称
+	// 2. 查询总数
+	countSQL := `
+		SELECT COUNT(*) 
+		FROM emag_category_stat cur
+		WHERE DATE_FORMAT(cur.snapshot_date, '%Y-%m-%d') = ?
+	`
+	err = global.GVA_DB.Raw(countSQL, currentDate).Scan(&total).Error
+	if err != nil {
+		return nil, 0, "", "", err
+	}
+
+	// 3. 使用原生SQL进行JOIN查询计算增长率，同时关联 emag_category 表获取品类名称
 	sql := `
 		SELECT 
 			cur.category_id,
@@ -123,11 +142,11 @@ func (e *EmagCategoryStatService) GetCategoryStatGrowthRank(info emagReq.Categor
 			AND DATE_FORMAT(prev.snapshot_date, '%Y-%m-%d') = ?
 		LEFT JOIN emag_category cat ON cur.category_id = cat.category_id
 		WHERE DATE_FORMAT(cur.snapshot_date, '%Y-%m-%d') = ?
-		ORDER BY total_growth_rate DESC
-		LIMIT ?
+		ORDER BY supper_hot_growth_rate DESC
+		LIMIT ? OFFSET ?
 	`
 
-	err = global.GVA_DB.Raw(sql, currentDate, previousDate, previousDate, currentDate, limit).Scan(&list).Error
+	err = global.GVA_DB.Raw(sql, currentDate, previousDate, previousDate, currentDate, limit, offset).Scan(&list).Error
 
-	return list, currentDate, previousDate, err
+	return list, total, currentDate, previousDate, err
 }

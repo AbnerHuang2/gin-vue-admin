@@ -8,10 +8,10 @@ export const getSnapshotDateList = () => {
   })
 }
 
-// 获取品类指标Top20
-export const getCategoryStatTop20 = (params) => {
+// 分页获取品类指标列表
+export const getCategoryStatList = (params) => {
   return service({
-    url: '/emagCategoryStat/getTop20',
+    url: '/emagCategoryStat/getList',
     method: 'get',
     params
   })
