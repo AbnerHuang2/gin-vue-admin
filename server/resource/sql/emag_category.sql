@@ -10,5 +10,5 @@ CREATE TABLE IF NOT EXISTS `emag_category` (
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX `idx_category_id` (`category_id`),
     INDEX `idx_category_name` (`category_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Emag品类管理表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Emag品类管理表';
 
