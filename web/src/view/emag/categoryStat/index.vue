@@ -515,18 +515,18 @@ onMounted(() => {
 <style scoped lang="scss">
 .category-stat-container {
   padding: 16px;
-  background: #f5f7fa;
+  //background: #f5f7fa;
   min-height: calc(100vh - 100px);
 }
 
 .stat-tabs {
-  background: #fff;
+  //background: #fff;
   border-radius: 4px;
 }
 
 .gva-search-box {
   padding: 16px;
-  background: #fafafa;
+  //background: #fafafa;
   border-radius: 4px;
   margin-bottom: 16px;
 }

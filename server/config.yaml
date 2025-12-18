@@ -138,12 +138,12 @@ mssql:
     log-zap: false
 mysql:
     prefix: ""
-    port: "3306"
+    port: "3307"
     config: charset=utf8mb4&parseTime=True&loc=Local
-    db-name: gva
-    username: root
-    password: "123"
-    path: 127.0.0.1
+    db-name: gva_skitii
+    username: gva_skitii_root
+    password: 0tENRZHUWS4EDaOs
+    path: mysql2.sqlpub.com
     engine: ""
     log-mode: error
     max-idle-conns: 10
