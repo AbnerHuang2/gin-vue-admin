@@ -115,8 +115,8 @@ func Routers() *gin.Engine {
 		exampleRouter.InitAttachmentCategoryRouterRouter(PrivateGroup)      // 文件上传下载分类
 
 		// Emag 模块路由
-		emagRouter.InitEmagCategoryRouter(PrivateGroup)     // Emag品类管理路由
-		emagRouter.InitEmagCategoryStatRouter(PrivateGroup) // Emag品类指标路由
+		emagRouter.InitEmagCategoryRouter(PublicGroup)     // Emag品类管理路由
+		emagRouter.InitEmagCategoryStatRouter(PublicGroup) // Emag品类指标路由
 	}
 
 	//插件路由安装
