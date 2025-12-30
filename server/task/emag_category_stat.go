@@ -11,8 +11,15 @@ import (
 	"go.uber.org/zap"
 )
 
+var processFlag = false
+
 // UpdateCategoryStat 更新品类统计数据（定时任务入口）
 func UpdateCategoryStat() error {
+	if processFlag {
+		global.GVA_LOG.Info("品类统计数据更新任务已在运行中，跳过本次执行")
+		return nil
+	}
+	processFlag = true
 	startTime := time.Now()
 	global.GVA_LOG.Info("========== 开始更新品类统计数据 ==========")
 
@@ -107,7 +114,7 @@ func UpdateCategoryStat() error {
 	if failCount > 0 {
 		global.GVA_LOG.Warn(fmt.Sprintf("⚠️ %d 个分类处理失败", failCount))
 	}
-
+	processFlag = false
 	return nil
 }
 
@@ -142,7 +149,7 @@ func determineSnapshotDate(statService *emagService.EmagCategoryStatService, sna
 
 	// 否则继续使用上次的快照日期（续传模式）
 	global.GVA_LOG.Info("继续使用上次快照日期（续传模式）")
-	return latestDate.Truncate(24 * time.Hour), nil
+	return *latestDate, nil
 }
 
 // getPendingCategoryIds 获取待处理的分类ID列表
