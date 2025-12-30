@@ -41,6 +41,9 @@
             <el-form-item>
               <el-button type="primary" icon="search" @click="onListSubmit">查询</el-button>
               <el-button icon="refresh" @click="onListReset">重置</el-button>
+              <el-button type="warning" icon="refresh" :loading="updateTaskLoading" @click="handleTriggerUpdate">
+                {{ updateTaskLoading ? '更新中...' : '手动更新数据' }}
+              </el-button>
             </el-form-item>
           </el-form>
         </div>
@@ -188,7 +191,8 @@ import Chart from '@/components/charts/index.vue'
 import {
   getSnapshotDateList,
   getCategoryStatList,
-  getCategoryStatGrowthRank
+  getCategoryStatGrowthRank,
+  triggerUpdateTask
 } from '@/api/emagCategoryStat'
 
 defineOptions({
@@ -204,8 +208,8 @@ const snapshotDateList = ref([])
 // 品类指标列表搜索条件
 const listSearch = reactive({
   snapshotDate: '',
-  supperHotRate: 0,
-  oemSupperHotRate: 0
+  supperHotRate: 0.10,
+  oemSupperHotRate: 0.05
 })
 
 // 品类指标列表分页
@@ -227,6 +231,9 @@ const growthDateInfo = reactive({
   currentDate: '',
   previousDate: ''
 })
+
+// 更新任务状态
+const updateTaskLoading = ref(false)
 
 // 获取快照日期列表
 const fetchSnapshotDateList = async () => {
@@ -312,6 +319,26 @@ const handleListCurrentChange = (val) => {
 // 品类指标列表序号方法
 const listIndexMethod = (index) => {
   return (listPage.value - 1) * listPageSize.value + index + 1
+}
+
+// 手动触发更新任务
+const handleTriggerUpdate = async () => {
+  try {
+    updateTaskLoading.value = true
+    const res = await triggerUpdateTask()
+    if (res.code === 0) {
+      ElMessage.success(res.msg || '任务已触发，请稍后刷新页面查看结果')
+    } else {
+      ElMessage.error(res.msg || '触发任务失败')
+    }
+  } catch (error) {
+    ElMessage.error('触发任务失败')
+  } finally {
+    // 3秒后恢复按钮状态
+    setTimeout(() => {
+      updateTaskLoading.value = false
+    }, 3000)
+  }
 }
 
 // 同比增长查询

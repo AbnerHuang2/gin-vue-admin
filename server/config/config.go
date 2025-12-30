@@ -37,4 +37,7 @@ type Server struct {
 
 	// MCP配置
 	MCP MCP `mapstructure:"mcp" json:"mcp" yaml:"mcp"`
+
+	// Emag配置
+	Emag Emag `mapstructure:"emag" json:"emag" yaml:"emag"`
 }

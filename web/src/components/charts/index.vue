@@ -17,7 +17,30 @@
 <script setup>
   import { ref, nextTick } from 'vue'
   import VCharts from 'vue-echarts'
+  import { use } from 'echarts/core'
+  import { CanvasRenderer } from 'echarts/renderers'
+  import { BarChart, LineChart, PieChart } from 'echarts/charts'
+  import {
+    TitleComponent,
+    TooltipComponent,
+    LegendComponent,
+    GridComponent,
+    DataZoomComponent
+  } from 'echarts/components'
   import { useWindowResize } from '@/hooks/use-windows-resize'
+
+  // 注册 echarts 组件
+  use([
+    CanvasRenderer,
+    BarChart,
+    LineChart,
+    PieChart,
+    TitleComponent,
+    TooltipComponent,
+    LegendComponent,
+    GridComponent,
+    DataZoomComponent
+  ])
 
   defineProps({
     options: {

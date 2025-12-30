@@ -4,6 +4,7 @@ import (
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/common/response"
 	emagReq "github.com/flipped-aurora/gin-vue-admin/server/model/emag/request"
+	"github.com/flipped-aurora/gin-vue-admin/server/task"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -92,4 +93,27 @@ func (e *EmagCategoryStatApi) GetCategoryStatGrowthRank(c *gin.Context) {
 		"currentDate":  currentDate,
 		"previousDate": previousDate,
 	}, "获取成功", c)
+}
+
+// TriggerUpdateTask 手动触发更新品类统计任务
+// @Tags      EmagCategoryStat
+// @Summary   手动触发更新品类统计任务
+// @Security  ApiKeyAuth
+// @accept    application/json
+// @Produce   application/json
+// @Success   200   {object}  response.Response{msg=string}  "触发成功"
+// @Router    /emagCategoryStat/triggerUpdate [post]
+func (e *EmagCategoryStatApi) TriggerUpdateTask(c *gin.Context) {
+	// 异步执行任务，避免接口超时
+	go func() {
+		global.GVA_LOG.Info("手动触发品类统计更新任务")
+		err := task.UpdateCategoryStat()
+		if err != nil {
+			global.GVA_LOG.Error("品类统计更新任务执行失败", zap.Error(err))
+		} else {
+			global.GVA_LOG.Info("品类统计更新任务执行完成")
+		}
+	}()
+
+	response.OkWithMessage("任务已触发，请稍后刷新页面查看结果", c)
 }

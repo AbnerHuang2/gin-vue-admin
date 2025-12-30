@@ -1,6 +1,8 @@
 package emag
 
 import (
+	"time"
+
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/emag"
 	emagReq "github.com/flipped-aurora/gin-vue-admin/server/model/emag/request"
@@ -78,4 +80,108 @@ func (e *EmagCategoryService) GetEmagCategoryList(info emagReq.EmagCategorySearc
 	}
 	err = db.Limit(limit).Offset(offset).Order("id desc").Find(&list).Error
 	return list, total, err
+}
+
+// GetActiveCategoryIds 获取状态为 normal 的所有 category_id
+func (e *EmagCategoryService) GetActiveCategoryIds() ([]string, error) {
+	var categoryIds []string
+	err := global.GVA_DB.Model(&emag.EmagCategory{}).
+		Where("status = ? OR status IS NULL OR status = ''", emag.CategoryStatusNormal).
+		Pluck("category_id", &categoryIds).Error
+	return categoryIds, err
+}
+
+// GetAllCategoryIdsWithInfo 获取所有活跃分类的ID和信息（用于定时任务）
+func (e *EmagCategoryService) GetAllCategoryIdsWithInfo() ([]emag.EmagCategory, error) {
+	var categories []emag.EmagCategory
+	err := global.GVA_DB.Model(&emag.EmagCategory{}).
+		Where("status = ? OR status IS NULL OR status = ''", emag.CategoryStatusNormal).
+		Select("id", "category_id", "category_name", "fail_count").
+		Order("id ASC").
+		Find(&categories).Error
+	return categories, err
+}
+
+// IncrementFailCount 增加失败计数，返回更新后的失败次数
+func (e *EmagCategoryService) IncrementFailCount(categoryId string, reason string) (int, error) {
+	now := time.Now()
+
+	// 先获取当前的 fail_count
+	var category emag.EmagCategory
+	err := global.GVA_DB.Model(&emag.EmagCategory{}).
+		Where("category_id = ?", categoryId).
+		Select("fail_count").
+		First(&category).Error
+	if err != nil {
+		return 0, err
+	}
+
+	newFailCount := category.FailCount + 1
+
+	// 更新失败计数和相关信息
+	err = global.GVA_DB.Model(&emag.EmagCategory{}).
+		Where("category_id = ?", categoryId).
+		Updates(map[string]interface{}{
+			"fail_count":       newFailCount,
+			"last_fail_reason": reason,
+			"last_fail_at":     &now,
+		}).Error
+
+	return newFailCount, err
+}
+
+// MarkAsBadRequest 标记为 bad_request 状态
+func (e *EmagCategoryService) MarkAsBadRequest(categoryId string, reason string) error {
+	now := time.Now()
+	return global.GVA_DB.Model(&emag.EmagCategory{}).
+		Where("category_id = ?", categoryId).
+		Updates(map[string]interface{}{
+			"status":           emag.CategoryStatusBadRequest,
+			"last_fail_reason": reason,
+			"last_fail_at":     &now,
+		}).Error
+}
+
+// ResetFailCount 重置失败计数（成功时调用）
+func (e *EmagCategoryService) ResetFailCount(categoryId string) error {
+	return global.GVA_DB.Model(&emag.EmagCategory{}).
+		Where("category_id = ?", categoryId).
+		Updates(map[string]interface{}{
+			"fail_count": 0,
+			"status":     emag.CategoryStatusNormal,
+		}).Error
+}
+
+// ResetBadRequestStatus 手动重置 bad_request 状态为 normal（提供 API 供管理员使用）
+func (e *EmagCategoryService) ResetBadRequestStatus(categoryId string) error {
+	return global.GVA_DB.Model(&emag.EmagCategory{}).
+		Where("category_id = ?", categoryId).
+		Updates(map[string]interface{}{
+			"status":           emag.CategoryStatusNormal,
+			"fail_count":       0,
+			"last_fail_reason": "",
+			"last_fail_at":     nil,
+		}).Error
+}
+
+// ResetAllBadRequestStatus 重置所有 bad_request 状态为 normal
+func (e *EmagCategoryService) ResetAllBadRequestStatus() (int64, error) {
+	result := global.GVA_DB.Model(&emag.EmagCategory{}).
+		Where("status = ?", emag.CategoryStatusBadRequest).
+		Updates(map[string]interface{}{
+			"status":           emag.CategoryStatusNormal,
+			"fail_count":       0,
+			"last_fail_reason": "",
+			"last_fail_at":     nil,
+		})
+	return result.RowsAffected, result.Error
+}
+
+// GetBadRequestCategories 获取所有 bad_request 状态的分类
+func (e *EmagCategoryService) GetBadRequestCategories() ([]emag.EmagCategory, error) {
+	var categories []emag.EmagCategory
+	err := global.GVA_DB.Model(&emag.EmagCategory{}).
+		Where("status = ?", emag.CategoryStatusBadRequest).
+		Find(&categories).Error
+	return categories, err
 }

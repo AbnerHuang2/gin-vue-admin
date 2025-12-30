@@ -26,3 +26,11 @@ export const getCategoryStatGrowthRank = (params) => {
   })
 }
 
+// 手动触发更新品类统计任务
+export const triggerUpdateTask = () => {
+  return service({
+    url: '/emagCategoryStat/triggerUpdate',
+    method: 'post'
+  })
+}
+

@@ -1,6 +1,8 @@
 package emag
 
 import (
+	"time"
+
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/emag"
 	emagReq "github.com/flipped-aurora/gin-vue-admin/server/model/emag/request"
@@ -149,4 +151,44 @@ func (e *EmagCategoryStatService) GetCategoryStatGrowthRank(info emagReq.Categor
 	err = global.GVA_DB.Raw(sql, currentDate, previousDate, previousDate, currentDate, limit, offset).Scan(&list).Error
 
 	return list, total, currentDate, previousDate, err
+}
+
+// GetLatestSnapshotDate 获取最新的快照日期
+func (e *EmagCategoryStatService) GetLatestSnapshotDate() (*time.Time, error) {
+	var snapshotDate *time.Time
+	err := global.GVA_DB.Model(&emag.EmagCategoryStat{}).
+		Select("MAX(snapshot_date)").
+		Scan(&snapshotDate).Error
+	return snapshotDate, err
+}
+
+// GetProcessedCategoryIds 获取指定快照日期已处理的 category_id 列表
+func (e *EmagCategoryStatService) GetProcessedCategoryIds(snapshotDate time.Time) ([]string, error) {
+	var categoryIds []string
+	err := global.GVA_DB.Model(&emag.EmagCategoryStat{}).
+		Where("DATE(snapshot_date) = DATE(?)", snapshotDate).
+		Pluck("category_id", &categoryIds).Error
+	return categoryIds, err
+}
+
+// CreateCategoryStat 创建品类统计记录
+func (e *EmagCategoryStatService) CreateCategoryStat(stat *emag.EmagCategoryStat) error {
+	return global.GVA_DB.Create(stat).Error
+}
+
+// BatchCreateCategoryStat 批量创建品类统计记录
+func (e *EmagCategoryStatService) BatchCreateCategoryStat(stats []emag.EmagCategoryStat) error {
+	if len(stats) == 0 {
+		return nil
+	}
+	return global.GVA_DB.CreateInBatches(stats, 100).Error
+}
+
+// CheckCategoryStatExists 检查指定日期的品类统计是否已存在
+func (e *EmagCategoryStatService) CheckCategoryStatExists(categoryId string, snapshotDate time.Time) (bool, error) {
+	var count int64
+	err := global.GVA_DB.Model(&emag.EmagCategoryStat{}).
+		Where("category_id = ? AND DATE(snapshot_date) = DATE(?)", categoryId, snapshotDate).
+		Count(&count).Error
+	return count > 0, err
 }
