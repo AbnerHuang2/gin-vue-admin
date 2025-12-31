@@ -32,8 +32,8 @@ func (e *EmagCategoryStatService) GetCategoryStatList(info emagReq.CategoryStatS
 		offset = 0
 	}
 
-	// 构建基础查询条件
-	whereClause := "1=1"
+	// 构建基础查询条件 - 只查询 normal 状态的品类
+	whereClause := "(c.status = 'normal' OR c.status IS NULL OR c.status = '')"
 	args := []interface{}{}
 
 	// 根据 supper_hot_rate 大于等于查询
@@ -54,8 +54,8 @@ func (e *EmagCategoryStatService) GetCategoryStatList(info emagReq.CategoryStatS
 		args = append(args, info.SnapshotDate)
 	}
 
-	// 查询总数
-	countSQL := `SELECT COUNT(*) FROM emag_category_stat s WHERE ` + whereClause
+	// 查询总数 - 关联 emag_category 表过滤状态
+	countSQL := `SELECT COUNT(*) FROM emag_category_stat s LEFT JOIN emag_category c ON s.category_id = c.category_id WHERE ` + whereClause
 	err = global.GVA_DB.Raw(countSQL, args...).Scan(&total).Error
 	if err != nil {
 		return
@@ -110,18 +110,20 @@ func (e *EmagCategoryStatService) GetCategoryStatGrowthRank(info emagReq.Categor
 	currentDate = dates[0]
 	previousDate = dates[1]
 
-	// 2. 查询总数
+	// 2. 查询总数 - 只查询 normal 状态的品类
 	countSQL := `
 		SELECT COUNT(*) 
 		FROM emag_category_stat cur
+		LEFT JOIN emag_category cat ON cur.category_id = cat.category_id
 		WHERE DATE_FORMAT(cur.snapshot_date, '%Y-%m-%d') = ?
+		AND (cat.status = 'normal' OR cat.status IS NULL OR cat.status = '')
 	`
 	err = global.GVA_DB.Raw(countSQL, currentDate).Scan(&total).Error
 	if err != nil {
 		return nil, 0, "", "", err
 	}
 
-	// 3. 使用原生SQL进行JOIN查询计算增长率，同时关联 emag_category 表获取品类名称
+	// 3. 使用原生SQL进行JOIN查询计算增长率，同时关联 emag_category 表获取品类名称，只查询 normal 状态的品类
 	sql := `
 		SELECT 
 			cur.category_id,
@@ -144,6 +146,7 @@ func (e *EmagCategoryStatService) GetCategoryStatGrowthRank(info emagReq.Categor
 			AND DATE_FORMAT(prev.snapshot_date, '%Y-%m-%d') = ?
 		LEFT JOIN emag_category cat ON cur.category_id = cat.category_id
 		WHERE DATE_FORMAT(cur.snapshot_date, '%Y-%m-%d') = ?
+		AND (cat.status = 'normal' OR cat.status IS NULL OR cat.status = '')
 		ORDER BY supper_hot_growth_rate DESC
 		LIMIT ? OFFSET ?
 	`

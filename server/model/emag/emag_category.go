@@ -8,6 +8,7 @@ import (
 const (
 	CategoryStatusNormal     = "normal"      // 正常状态
 	CategoryStatusBadRequest = "bad_request" // 请求失败状态
+	CategoryStatusNotCare    = "not_care"    // 不关注状态
 )
 
 // EmagCategory Emag品类管理结构体

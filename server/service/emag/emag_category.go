@@ -185,3 +185,17 @@ func (e *EmagCategoryService) GetBadRequestCategories() ([]emag.EmagCategory, er
 		Find(&categories).Error
 	return categories, err
 }
+
+// MarkAsNotCare 标记为 not_care 状态（不关注）
+func (e *EmagCategoryService) MarkAsNotCare(categoryId string) error {
+	return global.GVA_DB.Model(&emag.EmagCategory{}).
+		Where("category_id = ?", categoryId).
+		Update("status", emag.CategoryStatusNotCare).Error
+}
+
+// UpdateCategoryStatus 更新品类状态
+func (e *EmagCategoryService) UpdateCategoryStatus(categoryId string, status string) error {
+	return global.GVA_DB.Model(&emag.EmagCategory{}).
+		Where("category_id = ?", categoryId).
+		Update("status", status).Error
+}

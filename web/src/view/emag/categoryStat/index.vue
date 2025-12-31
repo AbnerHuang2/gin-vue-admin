@@ -90,6 +90,20 @@
               </template>
             </el-table-column>
             <el-table-column align="left" label="标签" prop="tags" min-width="100" />
+            <el-table-column align="center" label="操作" width="100" fixed="right">
+              <template #default="scope">
+                <el-popconfirm
+                  title="确定要标记为不关注吗？标记后将不再显示此品类"
+                  confirm-button-text="确定"
+                  cancel-button-text="取消"
+                  @confirm="handleMarkAsNotCare(scope.row)"
+                >
+                  <template #reference>
+                    <el-button type="danger" link size="small">不关注</el-button>
+                  </template>
+                </el-popconfirm>
+              </template>
+            </el-table-column>
           </el-table>
           <div class="gva-pagination">
             <el-pagination
@@ -192,7 +206,8 @@ import {
   getSnapshotDateList,
   getCategoryStatList,
   getCategoryStatGrowthRank,
-  triggerUpdateTask
+  triggerUpdateTask,
+  markAsNotCare
 } from '@/api/emagCategoryStat'
 
 defineOptions({
@@ -338,6 +353,22 @@ const handleTriggerUpdate = async () => {
     setTimeout(() => {
       updateTaskLoading.value = false
     }, 3000)
+  }
+}
+
+// 标记品类为不关注
+const handleMarkAsNotCare = async (row) => {
+  try {
+    const res = await markAsNotCare(row.categoryId)
+    if (res.code === 0) {
+      ElMessage.success('标记成功')
+      // 刷新列表
+      fetchListData()
+    } else {
+      ElMessage.error(res.msg || '标记失败')
+    }
+  } catch (error) {
+    ElMessage.error('标记失败')
   }
 }
 

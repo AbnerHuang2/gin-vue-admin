@@ -117,3 +117,31 @@ func (e *EmagCategoryStatApi) TriggerUpdateTask(c *gin.Context) {
 
 	response.OkWithMessage("任务已触发，请稍后刷新页面查看结果", c)
 }
+
+// MarkCategoryAsNotCare 标记品类为不关注
+// @Tags      EmagCategoryStat
+// @Summary   标记品类为不关注
+// @Security  ApiKeyAuth
+// @accept    application/json
+// @Produce   application/json
+// @Param     data  body      map[string]string  true  "品类ID"
+// @Success   200   {object}  response.Response{msg=string}  "标记成功"
+// @Router    /emagCategoryStat/markAsNotCare [post]
+func (e *EmagCategoryStatApi) MarkCategoryAsNotCare(c *gin.Context) {
+	var req struct {
+		CategoryId string `json:"categoryId" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.FailWithMessage("参数错误: "+err.Error(), c)
+		return
+	}
+
+	err := emagCategoryService.MarkAsNotCare(req.CategoryId)
+	if err != nil {
+		global.GVA_LOG.Error("标记品类为不关注失败!", zap.Error(err))
+		response.FailWithMessage("标记失败: "+err.Error(), c)
+		return
+	}
+
+	response.OkWithMessage("标记成功", c)
+}

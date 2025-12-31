@@ -34,3 +34,12 @@ export const triggerUpdateTask = () => {
   })
 }
 
+// 标记品类为不关注
+export const markAsNotCare = (categoryId) => {
+  return service({
+    url: '/emagCategoryStat/markAsNotCare',
+    method: 'post',
+    data: { categoryId }
+  })
+}
+
