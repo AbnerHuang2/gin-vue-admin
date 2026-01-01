@@ -1,4 +1,3 @@
-# Railway 部署使用， 本地开发不使用
 worker_processes auto;
 error_log /var/log/nginx/error.log warn;
 pid /tmp/nginx.pid;
@@ -29,8 +28,12 @@ http {
     uwsgi_temp_path /tmp/uwsgi_temp;
     scgi_temp_path /tmp/scgi_temp;
 
+    # DNS 解析器 - 使用 Google DNS
+    resolver 8.8.8.8 8.8.4.4 valid=300s;
+    resolver_timeout 5s;
+
     server {
-        # Railway 会设置 PORT 环境变量
+        # 使用环境变量 PORT
         listen ${PORT};
         server_name _;
 
@@ -39,31 +42,30 @@ http {
 
         # API 代理到后端
         location /api/ {
-            # 后端地址，通过环境变量设置
-            proxy_pass ${BACKEND_URL};
+            # 使用环境变量 BACKEND_HOST
+            set $backend_host "${BACKEND_HOST}";
+            
+            proxy_pass https://$backend_host;
             proxy_http_version 1.1;
-            proxy_set_header Host $host;
+            
+            # SSL SNI 支持 - 关键配置
+            proxy_ssl_server_name on;
+            proxy_ssl_name $backend_host;
+            proxy_ssl_protocols TLSv1.2 TLSv1.3;
+            
+            # 设置正确的 Host 头
+            proxy_set_header Host $backend_host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Proto https;
             
             # 移除 /api 前缀
             rewrite ^/api/(.*) /$1 break;
 
-            # CORS 头
-            add_header Access-Control-Allow-Origin * always;
-            add_header Access-Control-Allow-Methods 'GET, POST, PUT, DELETE, OPTIONS' always;
-            add_header Access-Control-Allow-Headers 'Content-Type, Authorization, x-token, x-user-id' always;
-
-            # 处理 OPTIONS 请求
-            if ($request_method = 'OPTIONS') {
-                add_header Access-Control-Allow-Origin * always;
-                add_header Access-Control-Allow-Methods 'GET, POST, PUT, DELETE, OPTIONS' always;
-                add_header Access-Control-Allow-Headers 'Content-Type, Authorization, x-token, x-user-id' always;
-                add_header Access-Control-Max-Age 86400;
-                add_header Content-Length 0;
-                return 204;
-            }
+            # 超时设置
+            proxy_connect_timeout 60s;
+            proxy_send_timeout 60s;
+            proxy_read_timeout 60s;
         }
 
         # 静态资源缓存
