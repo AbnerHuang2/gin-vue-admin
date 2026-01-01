@@ -1,25 +1,34 @@
-# 如果需要用 cicd ，请设置环境变量：
-# variables:
-#     DOCKER_BUILDKIT: 1
+# 构建阶段
+FROM node:18-alpine as builder
 
-FROM node:20-slim AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
-COPY . /app
 WORKDIR /app
 
+# 复制 package 文件
+COPY package*.json ./
 
-FROM base AS prod-deps
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod
+# 安装依赖
+RUN npm install
 
-FROM base AS build
-COPY --from=prod-deps /app/node_modules /app/node_modules
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install && pnpm run build
+# 复制源代码
+COPY . .
 
+# 构建生产版本
+RUN npm run build
 
+# 生产阶段 - 使用 nginx 服务静态文件
 FROM nginx:alpine
-LABEL MAINTAINER="bypanghu@163.com"
-COPY --from=base  /app/.docker-compose/nginx/conf.d/my.conf /etc/nginx/conf.d/my.conf
-COPY --from=build  /app/dist /usr/share/nginx/html
-RUN ls -al /usr/share/nginx/html
+
+# 复制 nginx 配置
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# 从构建阶段复制构建产物
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Railway 使用 PORT 环境变量
+ENV PORT=80
+EXPOSE ${PORT}
+
+# 启动 nginx（使用 envsubst 替换环境变量）
+CMD envsubst '${PORT} ${BACKEND_URL}' < /etc/nginx/nginx.conf > /etc/nginx/nginx.conf.tmp \
+    && mv /etc/nginx/nginx.conf.tmp /etc/nginx/nginx.conf \
+    && nginx -g 'daemon off;'
