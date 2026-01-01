@@ -43,3 +43,12 @@ export const markAsNotCare = (categoryId) => {
   })
 }
 
+// 更新 Emag Cookie
+export const updateEmagCookie = (cookie) => {
+  return service({
+    url: '/emagCategoryStat/updateCookie',
+    method: 'post',
+    data: { cookie }
+  })
+}
+

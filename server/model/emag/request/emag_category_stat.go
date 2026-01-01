@@ -16,3 +16,8 @@ type CategoryStatSearch struct {
 type CategoryStatGrowthSearch struct {
 	request.PageInfo
 }
+
+// UpdateEmagCookieRequest 更新 Emag Cookie 请求参数
+type UpdateEmagCookieRequest struct {
+	Cookie string `json:"cookie" binding:"required"`
+}

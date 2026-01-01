@@ -145,3 +145,36 @@ func (e *EmagCategoryStatApi) MarkCategoryAsNotCare(c *gin.Context) {
 
 	response.OkWithMessage("标记成功", c)
 }
+
+// UpdateEmagCookie 更新 Emag Cookie
+// @Tags      EmagCategoryStat
+// @Summary   更新 Emag Cookie
+// @Security  ApiKeyAuth
+// @accept    application/json
+// @Produce   application/json
+// @Param     data  body      emagReq.UpdateEmagCookieRequest  true  "Cookie"
+// @Success   200   {object}  response.Response{msg=string}  "更新成功"
+// @Router    /emagCategoryStat/updateCookie [post]
+func (e *EmagCategoryStatApi) UpdateEmagCookie(c *gin.Context) {
+	var req emagReq.UpdateEmagCookieRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.FailWithMessage("参数错误: "+err.Error(), c)
+		return
+	}
+
+	// 1. 更新内存中的配置
+	global.GVA_CONFIG.Emag.Cookie = req.Cookie
+
+	//// 2. 更新配置文件 (持久化)
+	//viper.Set("emag.cookie", req.Cookie)
+	//err := viper.WriteConfig()
+	//if err != nil {
+	//	global.GVA_LOG.Error("更新配置文件失败!", zap.Error(err))
+	//	// 内存已更新成功，提示用户配置文件写入失败
+	//	response.OkWithMessage("Cookie 已更新（内存），但配置文件写入失败，重启后需要重新配置", c)
+	//	return
+	//}
+
+	global.GVA_LOG.Info("Emag Cookie 更新成功")
+	response.OkWithMessage("Cookie 更新成功", c)
+}

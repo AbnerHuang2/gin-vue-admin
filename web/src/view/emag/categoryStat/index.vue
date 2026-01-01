@@ -41,6 +41,7 @@
             <el-form-item>
               <el-button type="primary" icon="search" @click="onListSubmit">查询</el-button>
               <el-button icon="refresh" @click="onListReset">重置</el-button>
+              <el-button type="info" @click="showCookieDialog">更新 Emag Cookie</el-button>
               <el-button type="warning" icon="refresh" :loading="updateTaskLoading" @click="handleTriggerUpdate">
                 {{ updateTaskLoading ? '更新中...' : '手动更新数据' }}
               </el-button>
@@ -195,6 +196,25 @@
         </div>
       </el-tab-pane>
     </el-tabs>
+    <!-- Cookie 更新弹窗 -->
+    <el-dialog v-model="cookieDialogVisible" title="更新 Emag Cookie" width="600px">
+      <el-form>
+        <el-form-item label="Cookie">
+          <el-input
+            v-model="cookieInput"
+            type="textarea"
+            :rows="6"
+            placeholder="请输入新的 Emag Cookie"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="cookieDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="cookieUpdateLoading" @click="handleUpdateCookie">
+          确定
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -207,7 +227,8 @@ import {
   getCategoryStatList,
   getCategoryStatGrowthRank,
   triggerUpdateTask,
-  markAsNotCare
+  markAsNotCare,
+  updateEmagCookie
 } from '@/api/emagCategoryStat'
 
 defineOptions({
@@ -249,6 +270,11 @@ const growthDateInfo = reactive({
 
 // 更新任务状态
 const updateTaskLoading = ref(false)
+
+// Cookie 更新弹窗状态
+const cookieDialogVisible = ref(false)
+const cookieInput = ref('')
+const cookieUpdateLoading = ref(false)
 
 // 获取快照日期列表
 const fetchSnapshotDateList = async () => {
@@ -369,6 +395,34 @@ const handleMarkAsNotCare = async (row) => {
     }
   } catch (error) {
     ElMessage.error('标记失败')
+  }
+}
+
+// 显示 Cookie 更新弹窗
+const showCookieDialog = () => {
+  cookieInput.value = ''
+  cookieDialogVisible.value = true
+}
+
+// 更新 Cookie
+const handleUpdateCookie = async () => {
+  if (!cookieInput.value.trim()) {
+    ElMessage.warning('请输入 Cookie')
+    return
+  }
+  try {
+    cookieUpdateLoading.value = true
+    const res = await updateEmagCookie(cookieInput.value.trim())
+    if (res.code === 0) {
+      ElMessage.success(res.msg || 'Cookie 更新成功')
+      cookieDialogVisible.value = false
+    } else {
+      ElMessage.error(res.msg || 'Cookie 更新失败')
+    }
+  } catch (error) {
+    ElMessage.error('Cookie 更新失败')
+  } finally {
+    cookieUpdateLoading.value = false
   }
 }
 
