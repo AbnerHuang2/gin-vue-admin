@@ -7,9 +7,11 @@ import (
 type RouterGroup struct {
 	EmagCategoryRouter
 	EmagCategoryStatRouter
+	EmagOrderRouter
 }
 
 var (
 	emagCategoryApi     = api.ApiGroupApp.EmagApiGroup.EmagCategoryApi
 	emagCategoryStatApi = api.ApiGroupApp.EmagApiGroup.EmagCategoryStatApi
+	emagOrderApi        = api.ApiGroupApp.EmagApiGroup.EmagOrderApi
 )
