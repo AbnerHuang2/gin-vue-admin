@@ -14,6 +14,7 @@
   "/src/view/emag/category/index.vue": "EmagCategory",
   "/src/view/emag/categoryStat/index.vue": "EmagCategoryStat",
   "/src/view/emag/order/index.vue": "EmagOrder",
+  "/src/view/emag/product/index.vue": "EmagProduct",
   "/src/view/error/index.vue": "Error",
   "/src/view/error/reload.vue": "Reload",
   "/src/view/example/breakpoint/breakpoint.vue": "BreakPoint",
