@@ -65,8 +65,40 @@
           >
             <el-table-column align="center" label="序号" type="index" width="70" :index="listIndexMethod" />
             <el-table-column align="left" label="品类ID" prop="categoryId" width="150" />
-            <el-table-column align="left" label="品类名称" prop="categoryName" min-width="150" show-overflow-tooltip />
-            <el-table-column align="left" label="子品类名称" prop="subcategoryName" min-width="150" show-overflow-tooltip />
+            <el-table-column align="left" label="品类名称" prop="categoryName" min-width="180" show-overflow-tooltip>
+              <template #default="scope">
+                <div class="copy-cell">
+                  <span class="copy-cell__text" :title="scope.row.categoryName || ''">
+                    {{ scope.row.categoryName || '-' }}
+                  </span>
+                  <el-tooltip content="复制" placement="top">
+                    <el-button
+                      type="primary"
+                      link
+                      :icon="DocumentCopy"
+                      @click.stop="copyCellText(scope.row.categoryName, '品类名称')"
+                    />
+                  </el-tooltip>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column align="left" label="子品类名称" prop="subcategoryName" min-width="180" show-overflow-tooltip>
+              <template #default="scope">
+                <div class="copy-cell">
+                  <span class="copy-cell__text" :title="scope.row.subcategoryName || ''">
+                    {{ scope.row.subcategoryName || '-' }}
+                  </span>
+                  <el-tooltip content="复制" placement="top">
+                    <el-button
+                      type="primary"
+                      link
+                      :icon="DocumentCopy"
+                      @click.stop="copyCellText(scope.row.subcategoryName, '子品类名称')"
+                    />
+                  </el-tooltip>
+                </div>
+              </template>
+            </el-table-column>
             <el-table-column align="right" label="总数" prop="total" width="100" />
             <el-table-column align="right" label="超热销总数" prop="supperHotTotal" width="120" />
             <el-table-column align="right" label="OEM总数" prop="oemTotal" width="100" />
@@ -151,8 +183,40 @@
           >
             <el-table-column align="center" label="序号" type="index" width="70" :index="growthIndexMethod" />
             <el-table-column align="left" label="品类ID" prop="categoryId" width="150" />
-            <el-table-column align="left" label="品类名称" prop="categoryName" min-width="150" show-overflow-tooltip />
-            <el-table-column align="left" label="子品类名称" prop="subcategoryName" min-width="150" show-overflow-tooltip />
+            <el-table-column align="left" label="品类名称" prop="categoryName" min-width="180" show-overflow-tooltip>
+              <template #default="scope">
+                <div class="copy-cell">
+                  <span class="copy-cell__text" :title="scope.row.categoryName || ''">
+                    {{ scope.row.categoryName || '-' }}
+                  </span>
+                  <el-tooltip content="复制" placement="top">
+                    <el-button
+                      type="primary"
+                      link
+                      :icon="DocumentCopy"
+                      @click.stop="copyCellText(scope.row.categoryName, '品类名称')"
+                    />
+                  </el-tooltip>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column align="left" label="子品类名称" prop="subcategoryName" min-width="180" show-overflow-tooltip>
+              <template #default="scope">
+                <div class="copy-cell">
+                  <span class="copy-cell__text" :title="scope.row.subcategoryName || ''">
+                    {{ scope.row.subcategoryName || '-' }}
+                  </span>
+                  <el-tooltip content="复制" placement="top">
+                    <el-button
+                      type="primary"
+                      link
+                      :icon="DocumentCopy"
+                      @click.stop="copyCellText(scope.row.subcategoryName, '子品类名称')"
+                    />
+                  </el-tooltip>
+                </div>
+              </template>
+            </el-table-column>
             <el-table-column align="right" label="当前总数" prop="currentTotal" width="100" />
             <el-table-column align="right" label="上期总数" prop="previousTotal" width="100" />
             <el-table-column align="right" label="总数增长率(%)" width="130">
@@ -221,6 +285,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { DocumentCopy } from '@element-plus/icons-vue'
 import Chart from '@/components/charts/index.vue'
 import {
   getSnapshotDateList,
@@ -446,6 +511,21 @@ const handleGrowthCurrentChange = (val) => {
 // 同比增长序号方法
 const growthIndexMethod = (index) => {
   return (growthPage.value - 1) * growthPageSize.value + index + 1
+}
+
+// 复制单元格文本到剪贴板
+const copyCellText = async (value, label = '') => {
+  const text = value == null || value === '' ? '' : String(value)
+  if (!text) {
+    ElMessage.warning(label ? `${label}为空，无法复制` : '暂无内容可复制')
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(text)
+    ElMessage.success(label ? `已复制${label}` : '已复制到剪贴板')
+  } catch {
+    ElMessage.error('复制失败，请检查浏览器权限')
+  }
 }
 
 // 格式化比率
@@ -694,5 +774,20 @@ onMounted(() => {
 .growth-negative {
   color: #F56C6C;
   font-weight: 600;
+}
+
+.copy-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+
+  .copy-cell__text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 </style>
