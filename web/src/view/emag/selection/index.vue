@@ -261,6 +261,19 @@
 
         <div class="gva-table-box">
           <el-table :data="historyTable" style="width: 100%" tooltip-effect="dark" v-loading="historyLoading">
+            <el-table-column align="center" label="主图" width="80">
+              <template #default="{ row }">
+                <el-image
+                  v-if="row.main_image_url"
+                  :src="row.main_image_url"
+                  :preview-src-list="[row.main_image_url]"
+                  preview-teleported
+                  fit="contain"
+                  style="width: 50px; height: 50px"
+                />
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
             <el-table-column prop="task_id" label="任务ID" width="200" show-overflow-tooltip />
             <el-table-column prop="input_url" label="商品URL" min-width="250" show-overflow-tooltip />
             <el-table-column label="状态" width="100" align="center">

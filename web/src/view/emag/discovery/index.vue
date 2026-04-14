@@ -60,6 +60,19 @@
         v-loading="loading"
       >
         <el-table-column align="center" label="序号" type="index" width="60" :index="indexMethod" />
+        <el-table-column align="center" label="主图" width="80">
+          <template #default="scope">
+            <el-image
+              v-if="scope.row.main_image_url"
+              :src="scope.row.main_image_url"
+              :preview-src-list="[scope.row.main_image_url]"
+              preview-teleported
+              fit="contain"
+              style="width: 50px; height: 50px"
+            />
+            <span v-else class="no-data">-</span>
+          </template>
+        </el-table-column>
         <el-table-column align="left" label="商品名称" prop="title" min-width="280" show-overflow-tooltip />
         <el-table-column align="center" label="类目" width="100">
           <template #default="scope">
