@@ -114,6 +114,8 @@ func (i *initMenu) InitializeData(ctx context.Context) (next context.Context, er
 
 		// Emag子菜单
 		{MenuLevel: 1, Hidden: false, ParentId: menuNameMap["emag"], Path: "category", Name: "emagCategory", Component: "view/emag/category/index.vue", Sort: 1, Meta: Meta{Title: "品类管理", Icon: "menu"}},
+		{MenuLevel: 1, Hidden: false, ParentId: menuNameMap["emag"], Path: "discovery", Name: "emagDiscovery", Component: "view/emag/discovery/index.vue", Sort: 5, Meta: Meta{Title: "选品中心", Icon: "search"}},
+		{MenuLevel: 1, Hidden: false, ParentId: menuNameMap["emag"], Path: "selection", Name: "emagSelection", Component: "view/emag/selection/index.vue", Sort: 6, Meta: Meta{Title: "选品分析", Icon: "data-analysis"}},
 	}
 
 	// 创建子菜单

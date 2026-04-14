@@ -78,6 +78,12 @@ export default ({ mode }) => {
           changeOrigin: true,
           rewrite: (path) =>
             path.replace(new RegExp('^' + process.env.VITE_BASE_API), '')
+        },
+        [process.env.VITE_PY_API || '/pyapi']: {
+          target: `${process.env.VITE_BASE_PATH}:${process.env.VITE_PY_API_PORT || 8000}/`,
+          changeOrigin: true,
+          rewrite: (path) =>
+            path.replace(new RegExp('^' + (process.env.VITE_PY_API || '/pyapi')), '')
         }
       }
     },
