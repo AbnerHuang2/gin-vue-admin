@@ -298,9 +298,19 @@
             <el-table-column label="创建时间" width="180" align="center">
               <template #default="{ row }">{{ formatDateTime(row.ctime) }}</template>
             </el-table-column>
-            <el-table-column label="操作" width="100" align="center" fixed="right">
+            <el-table-column label="操作" width="160" align="center" fixed="right">
               <template #default="{ row }">
                 <el-button type="primary" link size="small" @click="handleViewReport(row)">查看报告</el-button>
+                <el-button
+                  v-if="row.status === 'pending' || row.status === 'failed'"
+                  type="warning"
+                  link
+                  size="small"
+                  :loading="retryingTaskId === row.task_id"
+                  @click="handleRetryTask(row)"
+                >
+                  重试
+                </el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -326,7 +336,7 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { submitAnalysis, getTaskStatus, getTaskReport, getTaskList } from '@/api/selection'
+import { submitAnalysis, getTaskStatus, getTaskReport, getTaskList, retryTask } from '@/api/selection'
 
 const route = useRoute()
 
@@ -573,6 +583,23 @@ const handleHistorySizeChange = (val) => {
 const handleHistoryPageChange = (val) => {
   historyPage.value = val
   fetchHistoryList()
+}
+
+const retryingTaskId = ref('')
+
+/** 重试 pending/failed 任务 */
+const handleRetryTask = async (row) => {
+  if (!row?.task_id) return
+  retryingTaskId.value = row.task_id
+  try {
+    await retryTask(row.task_id)
+    ElMessage.success('已重新提交分析')
+    await fetchHistoryList()
+  } catch (err) {
+    ElMessage.error(err?.response?.data?.detail || '重试失败')
+  } finally {
+    retryingTaskId.value = ''
+  }
 }
 
 /** 从历史查看报告：切到分析 Tab 并加载 */

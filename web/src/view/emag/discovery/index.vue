@@ -45,7 +45,7 @@
         <el-form-item>
           <el-button type="primary" icon="search" @click="onSearch">查询</el-button>
           <el-button icon="refresh" @click="onReset">重置</el-button>
-          <el-button type="success" icon="plus" :loading="discoveryLoading" @click="handleTriggerDiscovery">
+          <el-button type="success" icon="plus" :loading="discoveryLoading" :disabled="discoveryLoading" @click="showDiscoveryDialog">
             {{ discoveryLoading ? '发现中...' : '发现候选品' }}
           </el-button>
         </el-form-item>
@@ -108,16 +108,25 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column align="center" label="操作" width="220" fixed="right">
+        <el-table-column align="center" label="操作" width="280" fixed="right">
           <template #default="scope">
             <el-button
-              v-if="scope.row.status === 'new'"
+              v-if="scope.row.status === 'new' || scope.row.status === 'pending'"
               type="primary"
               size="small"
               :loading="submittingId === scope.row.id"
               @click="handleSubmitCandidate(scope.row)"
             >
               提交选品
+            </el-button>
+            <el-button
+              v-if="scope.row.status === 'new' || scope.row.status === 'pending'"
+              type="warning"
+              size="small"
+              :loading="analyzingId === scope.row.id"
+              @click="handleAnalyzeCandidate(scope.row)"
+            >
+              加入选品分析
             </el-button>
             <el-button
               v-if="scope.row.status === 'submitted' && scope.row.selection_task_id"
@@ -153,14 +162,37 @@
         />
       </div>
     </div>
+    <!-- 发现候选品 - 类目选择弹窗 -->
+    <el-dialog v-model="discoveryDialogVisible" title="选择抓取类目" width="420px" :close-on-click-modal="false">
+      <div style="margin-bottom: 12px">
+        <el-checkbox v-model="selectAllCategories" @change="handleSelectAll">全选</el-checkbox>
+      </div>
+      <el-checkbox-group v-model="selectedCategories">
+        <el-checkbox
+          v-for="item in categoryOptions"
+          :key="item.value"
+          :label="item.value"
+          :value="item.value"
+          style="display: block; margin-bottom: 8px"
+        >
+          {{ item.label }}
+        </el-checkbox>
+      </el-checkbox-group>
+      <template #footer>
+        <el-button @click="discoveryDialogVisible = false">取消</el-button>
+        <el-button type="primary" :disabled="selectedCategories.length === 0" @click="handleConfirmDiscovery">
+          确认
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getCandidateList, triggerDiscovery, submitCandidate } from '@/api/discovery'
+import { getCandidateList, triggerDiscovery, submitCandidate, analyzeCandidate } from '@/api/discovery'
 
 const router = useRouter()
 
@@ -204,6 +236,27 @@ const discoveryLoading = ref(false)
 const serviceUnavailable = ref(false)
 // 当前正在提交的行 id，用于按钮 loading
 const submittingId = ref(null)
+// 当前正在分析的行 id
+const analyzingId = ref(null)
+
+// 发现候选品弹窗
+const discoveryDialogVisible = ref(false)
+const selectedCategories = ref([])
+const selectAllCategories = ref(false)
+
+watch(selectedCategories, (val) => {
+  selectAllCategories.value = val.length === categoryOptions.length
+})
+
+const handleSelectAll = (val) => {
+  selectedCategories.value = val ? categoryOptions.map((i) => i.value) : []
+}
+
+const showDiscoveryDialog = () => {
+  selectedCategories.value = []
+  selectAllCategories.value = false
+  discoveryDialogVisible.value = true
+}
 
 // 类目展示文案
 const categoryLabelMap = Object.fromEntries(categoryOptions.map((i) => [i.value, i.label]))
@@ -314,18 +367,21 @@ const onReset = () => {
   fetchCandidateList()
 }
 
-// 触发发现任务
-const handleTriggerDiscovery = async () => {
+// 弹窗确认后触发发现任务，按钮 loading 至少 3 秒防重复点击
+const handleConfirmDiscovery = async () => {
+  discoveryDialogVisible.value = false
   discoveryLoading.value = true
+  const minWait = new Promise((r) => setTimeout(r, 3000))
   try {
-    await triggerDiscovery()
+    await triggerDiscovery(selectedCategories.value)
     ElMessage.success('发现任务已触发')
-    await fetchCandidateList()
   } catch (error) {
     console.error('触发发现失败', error)
     ElMessage.error('触发发现失败，请检查 Python 服务')
   } finally {
+    await minWait
     discoveryLoading.value = false
+    await fetchCandidateList()
   }
 }
 
@@ -342,6 +398,25 @@ const handleSubmitCandidate = async (row) => {
     ElMessage.error('提交选品失败')
   } finally {
     submittingId.value = null
+  }
+}
+
+// 加入选品分析：提交候选品 + 启动分析 + 跳转报告页
+const handleAnalyzeCandidate = async (row) => {
+  if (!row?.id) return
+  analyzingId.value = row.id
+  try {
+    const res = await analyzeCandidate(row.id)
+    ElMessage.success('选品分析已启动')
+    await fetchCandidateList()
+    if (res.task_id) {
+      router.push({ name: 'emagSelection', query: { task_id: res.task_id } })
+    }
+  } catch (error) {
+    console.error('加入选品分析失败', error)
+    ElMessage.error(error?.response?.data?.detail || '加入选品分析失败')
+  } finally {
+    analyzingId.value = null
   }
 }
 

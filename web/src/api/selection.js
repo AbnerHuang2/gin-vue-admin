@@ -22,6 +22,13 @@ export const getTaskReport = (taskId) => {
   })
 }
 
+export const retryTask = (taskId) => {
+  return pyService({
+    url: `/api/v1/selection/task/${taskId}/retry`,
+    method: 'post',
+  })
+}
+
 export const getTaskList = (params) => {
   return pyService({
     url: '/api/v1/selection/tasks',
