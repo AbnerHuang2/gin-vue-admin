@@ -602,7 +602,7 @@ const handleRetryTask = async (row) => {
   }
 }
 
-/** 从历史查看报告：切到分析 Tab 并加载 */
+/** 从历史查看报告：切到分析 Tab 并加载，进行中的任务自动轮询 */
 const handleViewReport = async (row) => {
   if (!row?.task_id) return
   clearStatusPoll()
@@ -622,7 +622,12 @@ const handleViewReport = async (row) => {
   } catch (err) {
     setPyError(err)
   }
-  await fetchReport()
+
+  if (taskStatus.status === 'done') {
+    await fetchReport()
+  } else if (taskStatus.status === 'pending' || taskStatus.status === 'running') {
+    startStatusPoll()
+  }
 }
 
 onMounted(() => {
